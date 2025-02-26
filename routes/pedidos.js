@@ -40,28 +40,42 @@ router.post('/', (req, res, next) => {
         if (error) { return res.status(500).send({ error: error }) };
 
         conn.query(
-            'INSERT INTO pedidos (quantidade, id_produto) VALUES (?,?);',
-            [req.body.quantidade, req.body.id_produto],
-            (error, result, fields) => {
-                conn.release();
+            'SELECT * FROM produtos WHERE id_produtos = ?;',
+            [req.body.id_produto],
+            (error, result, field) => {
+                if (error) { return res.status(500).send({ error: error }) }
 
-                if (error) { return res.status(500).send({ error: error }) };
-
-                const response = {
-                    mensagem: 'Pedido adicionado com sucesso',
-                    pedidoCriado: {
-                        id_pedido: result.id_pedidos,
-                        quantidade: req.body.quantidade,
-                        id_produto: req.body.id_produto,
-                        request: {
-                            tipo: 'GET',
-                            descricao: 'Coleta todos os pedidos',
-                            url: 'http://localhost:3000/pedidos'
-                        }
-                    }
+                if (result.length == 0) {
+                    return res.status(404).send({
+                        mensagem: 'Produto nao encontrado'
+                    })
                 }
-                
-                return res.status(201).send(response);
+
+                conn.query(
+                    'INSERT INTO pedidos (quantidade, id_produto) VALUES (?,?);',
+                    [req.body.quantidade, req.body.id_produto],
+                    (error, result, fields) => {
+                        conn.release();
+        
+                        if (error) { return res.status(500).send({ error: error }) };
+        
+                        const response = {
+                            mensagem: 'Pedido adicionado com sucesso',
+                            pedidoCriado: {
+                                id_pedido: result.id_pedidos,
+                                quantidade: req.body.quantidade,
+                                id_produto: req.body.id_produto,
+                                request: {
+                                    tipo: 'GET',
+                                    descricao: 'Coleta todos os pedidos',
+                                    url: 'http://localhost:3000/pedidos'
+                                }
+                            }
+                        }
+                        
+                        return res.status(201).send(response);
+                    }
+                )
             }
         )
     });
